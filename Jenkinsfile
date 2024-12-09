@@ -5,7 +5,21 @@ library identifier: 'RHTAP_Jenkins@v1.3', retriever: modernSCM(
    remote: 'https://github.com/redhat-appstudio/tssc-sample-jenkins.git'])
 
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            label 'jenkins-agent'
+            cloud 'openshift'
+            serviceAccount 'jenkins'
+            podRetention onFailure()
+            idleMinutes '30'
+            containerTemplate {
+                name 'jnlp'
+                image 'image-registry.openshift-image-registry.svc:5000/jenkins/jenkins-agent-base:latest'
+                ttyEnabled true
+                args '${computer.jnlpmac} ${computer.name}'
+            }
+        }
+    }
     environment {
         ROX_API_TOKEN = credentials('ROX_API_TOKEN')
         ROX_CENTRAL_ENDPOINT = credentials('ROX_CENTRAL_ENDPOINT')
@@ -18,7 +32,7 @@ pipeline {
         /* IMAGE_REGISTRY_PASSWORD = credentials('IMAGE_REGISTRY_PASSWORD') */
         /* Default registry is set to quay.io */
         QUAY_IO_CREDS = credentials('QUAY_IO_CREDS')
-        /* ARTIFACTORY_IO_CREDS = credentials('ARTIFACTORY_IO_CREDS') */
+        ARTIFACTORY_IO_CREDS = credentials('ARTIFACTORY_IO_CREDS')
         /* NEXUS_IO_CREDS = credentials('NEXUS_IO_CREDS') */
         COSIGN_SECRET_PASSWORD = credentials('COSIGN_SECRET_PASSWORD')
         COSIGN_SECRET_KEY = credentials('COSIGN_SECRET_KEY')
